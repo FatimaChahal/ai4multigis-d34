@@ -1,4 +1,4 @@
-# AI4MultiGIS — D3.4: Blockchain & DLT-based Decentralised MultiGIS Data Management System
+# AI4MultiGIS / D3.4: Blockchain & DLT-based Decentralised MultiGIS Data Management System
 
 [![Project](https://img.shields.io/badge/Project-AI4MultiGIS-185FA5)](https://www.ai4multigis.eu)
 [![Deliverable](https://img.shields.io/badge/Deliverable-D3.4-0F6E56)](https://github.com/FatimaChahal/ai4multigis-d34)
@@ -14,8 +14,8 @@ This repository contains the prototype implementation of **Deliverable D3.4** of
 D3.4 implements a **decentralised, blockchain-based governance layer** for geospatial analytical indices produced within the AI4MultiGIS MultiGIS framework. The system provides immutable provenance recording, cryptographic integrity verification, and role-based access control for geospatial data contributions across multiple institutional partners and application domains.
 
 The prototype has been validated across two pilot case studies:
-- **Pilot 1** — SuDS flood risk management (Chelmsford, UK) — 3,122 MASTER_GRID cells
-- **Pilot 2** — Invasive freshwater species monitoring (World of Crayfish, Europe) — 1,065 occurrence records
+- **Pilot 1**  SuDS flood risk management (Chelmsford, UK) with 3,122 MASTER_GRID cells
+- **Pilot 2**  Invasive freshwater species monitoring (World of Crayfish, Europe) with 1,065 occurrence records
 
 ---
 
@@ -41,10 +41,10 @@ The prototype has been validated across two pilot case studies:
 \`\`\`
 
 The system operates across four sequential stages:
-1. **Raw data ingestion** — vector and raster datasets into PostGIS \`raw_data\` schema
-2. **Feature engineering** — spatial grid construction and feature vector computation
-3. **Hash computation** — SHA-256 fingerprint of the complete analytical index snapshot
-4. **On-chain registration** — hash and provenance metadata submitted to \`GISIndexRegistry\`
+1. **Raw data ingestion** : vector and raster datasets into PostGIS \`raw_data\` schema
+2. **Feature engineering** : spatial grid construction and feature vector computation
+3. **Hash computation** : SHA-256 fingerprint of the complete analytical index snapshot
+4. **On-chain registration** : hash and provenance metadata submitted to \`GISIndexRegistry\`
 
 ---
 
