@@ -1,0 +1,23 @@
+# Environment
+config/.env
+config/contract_config.json
+
+# Node
+node_modules/
+blockchain/node_modules/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Data (too large for GitHub)
+data/*.xlsx
+data/*.tiff
+data/*.json
+data/rasters/
+data/vectors/
+
+# Hardhat artifacts (can be regenerated)
+blockchain/artifacts/
+blockchain/cache/

@@ -1,0 +1,46 @@
+{
+  "run_id": "20260417_112107",
+  "total_s": 0.054,
+  "records": [
+    {
+      "operation": "SHA-256 hash computation",
+      "duration_s": 0.0075,
+      "timestamp": "2026-04-17T11:21:07.947577",
+      "notes": "3122 grid cells serialised and hashed"
+    },
+    {
+      "operation": "TX submission to GISIndexRegistry",
+      "duration_s": 0.022,
+      "timestamp": "2026-04-17T11:21:07.972492",
+      "notes": "transact() call including signing"
+    },
+    {
+      "operation": "TX confirmation (block inclusion)",
+      "duration_s": 0.0032,
+      "timestamp": "2026-04-17T11:21:07.975849",
+      "notes": "Block #2 \u00b7 Gas used: 304892"
+    },
+    {
+      "operation": "Provenance log write-back (PostGIS)",
+      "duration_s": 0.0048,
+      "timestamp": "2026-04-17T11:21:07.982613",
+      "notes": "Updated provenance_log id=2 with TX hash"
+    },
+    {
+      "operation": "validateIndexVersion TX",
+      "duration_s": 0.0165,
+      "timestamp": "2026-04-17T11:21:07.999260",
+      "notes": "Gas used: 39099"
+    }
+  ],
+  "metadata": {
+    "environment": "Hardhat local simulation",
+    "contract_address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    "node_url": "http://127.0.0.1:8545",
+    "gas_used_registration": 304892,
+    "block_number": 2,
+    "gas_used_validation": 39099,
+    "hash_verified": true,
+    "on_chain_validated": true
+  }
+}

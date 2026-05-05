@@ -1,0 +1,51 @@
+{
+  "run_id": "20260420_095928",
+  "test_suite": "fault_tolerance",
+  "passed": 7,
+  "skipped": 0,
+  "failed": 0,
+  "results": [
+    {
+      "test": "Empty dataHash rejected by contract",
+      "expected": "Revert with 'Validation: dataHash cannot be empty'",
+      "status": "\u2713 PASSED",
+      "detail": "PASSED \u2014 correctly rejected with: 'Validation: dataHash cannot be empty'"
+    },
+    {
+      "test": "Empty layerName rejected by contract",
+      "expected": "Revert with 'Validation: layerName cannot be empty'",
+      "status": "\u2713 PASSED",
+      "detail": "PASSED \u2014 correctly rejected with: 'Validation: layerName cannot be empty'"
+    },
+    {
+      "test": "Empty actor rejected by contract",
+      "expected": "Revert with 'Validation: actor cannot be empty'",
+      "status": "\u2713 PASSED",
+      "detail": "PASSED \u2014 correctly rejected with: 'Validation: actor cannot be empty'"
+    },
+    {
+      "test": "Unauthorised actor registration rejected",
+      "expected": "Revert with 'AccessControl: caller is not a data provider'",
+      "status": "\u2713 PASSED",
+      "detail": "PASSED \u2014 correctly rejected with: 'AccessControl: caller is not a data provider'"
+    },
+    {
+      "test": "Double validation of same version rejected",
+      "expected": "Revert with 'Registry: version already validated'",
+      "status": "\u2713 PASSED",
+      "detail": "PASSED \u2014 correctly rejected with: 'Registry: version already validated'"
+    },
+    {
+      "test": "Validation of non-existent version rejected",
+      "expected": "Revert with 'Registry: version does not exist'",
+      "status": "\u2713 PASSED",
+      "detail": "PASSED \u2014 correctly rejected with: 'Registry: version does not exist'"
+    },
+    {
+      "test": "Hash mismatch detection",
+      "expected": "Returns False",
+      "status": "\u2713 PASSED",
+      "detail": "verifyIndexHash returned False for tampered hash (expected False)"
+    }
+  ]
+}
