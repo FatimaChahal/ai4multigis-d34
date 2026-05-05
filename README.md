@@ -246,7 +246,7 @@ https://github.com/FatimaChahal/ai4multigis-d34
 ## Team
 
 - **Fatima Chahal** — UPPA/LIUPPA (Task T3.4 lead)
-- **AI4MultiGIS Consortium** — ARU · UPPA · [consortium partners]
+- **AI4MultiGIS Consortium** — ARU · UPPA · UVT · LUT
 
 ---
 
