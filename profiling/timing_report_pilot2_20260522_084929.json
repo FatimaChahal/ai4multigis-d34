@@ -1,0 +1,40 @@
+{
+  "run_id": "20260522_084929",
+  "pilot": "Pilot 2",
+  "total_s": 0.7553,
+  "records": [
+    {
+      "operation": "WoC data ingestion to PostGIS",
+      "duration_s": 0.5137,
+      "notes": "1065 records inserted, 0 skipped"
+    },
+    {
+      "operation": "SHA-256 hash computation (WoC layer)",
+      "duration_s": 0.0005,
+      "notes": "1065 occurrence records"
+    },
+    {
+      "operation": "TX submission to GISIndexRegistry",
+      "duration_s": 0.0185,
+      "notes": "WoC layer"
+    },
+    {
+      "operation": "TX confirmation (block inclusion)",
+      "duration_s": 0.2208,
+      "notes": "Block #16306 \u00b7 Gas: 265442"
+    },
+    {
+      "operation": "Provenance log write-back (PostGIS)",
+      "duration_s": 0.0018,
+      "notes": "WoC governance record"
+    }
+  ],
+  "metadata": {
+    "environment": "Hardhat local simulation",
+    "dataset": "World of Crayfish (WoC) v1.2",
+    "records_ingested": 1065,
+    "woc_record_count": 1065,
+    "gas_used": 265442,
+    "tx_hash": "ce6b6e045ffe903f3297a37db8161647820d01c1e6ff05872ea2254a301c6195"
+  }
+}

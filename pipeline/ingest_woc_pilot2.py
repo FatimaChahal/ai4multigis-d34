@@ -22,6 +22,13 @@ LAYER_NAME   = "WoC_CRAYFISH_OCCURRENCES"
 
 engine = create_engine(f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}")
 w3 = Web3(Web3.HTTPProvider("http://127.0.0.1:8545"))
+from web3.middleware import ExtraDataToPOAMiddleware
+w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
+from eth_account import Account
+_pk = os.getenv("BESU_PRIVATE_KEY")
+if not _pk:
+    raise EnvironmentError("BESU_PRIVATE_KEY not set in config/.env")
+_account = Account.from_key(_pk)
 
 with open("/home/fatima/D3.4/config/contract_config.json") as f:
     cfg = json.load(f)
@@ -149,7 +156,10 @@ def compute_hash(report):
 def register(data_hash, report):
     log.info("Registering on blockchain...")
     with Timer() as t_sub:
-        tx = contract.functions.registerIndexVersion(data_hash, LAYER_NAME, ACTOR, f"PostGIS:raw_data.woc_occurrences").transact({"from": cfg["deployerAddress"], "gas": 500000})
+        fn = contract.functions.registerIndexVersion(data_hash, LAYER_NAME, ACTOR, f"PostGIS:raw_data.woc_occurrences")
+        tx_built = fn.build_transaction({"from": _account.address, "gas": 500000, "gasPrice": 0, "nonce": w3.eth.get_transaction_count(_account.address), "chainId": 1337})
+        signed = _account.sign_transaction(tx_built)
+        tx = w3.eth.send_raw_transaction(signed.raw_transaction)
     report.add("TX submission to GISIndexRegistry", t_sub.elapsed, "WoC layer")
     with Timer() as t_con:
         receipt = w3.eth.wait_for_transaction_receipt(tx)

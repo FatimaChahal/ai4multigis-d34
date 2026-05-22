@@ -1,14 +1,10 @@
 {
-    "sqltools.connections": [
-        {
-            "ssh": "Disabled",
-            "previewLimit": 50,
-            "server": "localhost",
-            "port": 5433,
-            "driver": "PostgreSQL",
-            "name": "AI4MultiGIS_D3.4",
-            "database": "ai4multigis_db",
-            "username": "ai4multigis"
-        }
-    ]
+  "sqltools.connections": [
+    {
+      "ssh": "Disabled",
+      "previewLimit": 50,
+      "driver": "PostgreSQL",
+      "name": "AI4MultiGIS_D3.4"
+    }
+  ]
 }

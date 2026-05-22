@@ -1,23 +1,54 @@
-# Environment
-config/.env
-config/contract_config.json
-
-# Node
-node_modules/
-blockchain/node_modules/
-
-# Python
+# ── Python ────────────────────────────────────────────────
+.venv/
 __pycache__/
 *.pyc
-.venv/
+*.pyo
+*.pyd
 
-# Data (too large for GitHub)
-data/*.xlsx
-data/*.tiff
-data/*.json
+# ── Environment & secrets ─────────────────────────────────
+config/.env
+besu-network/data/
+postgres-data/
+
+# ── Blockchain runtime ────────────────────────────────────
+blockchain/node_modules/
+blockchain/cache/
+blockchain/artifacts/build-info/
+besu-network/data/
+
+# ── Large datasets (too big for GitHub) ──────────────────
 data/rasters/
 data/vectors/
+data/database-WoC1_2.xlsx
+data/master_grid.geojson
+data/master_grid_risk_map.png
+data/master_grid_risk_map.pgw
+data/contours-romania.geojson
+data/rivers-romania.geojson
+pilot1_data.dump
+pilot2_dump.sql.gz
+pilot2_rasters.zip
+pilot2_vectors.zip
 
-# Hardhat artifacts (can be regenerated)
-blockchain/artifacts/
-blockchain/cache/
+# ── Outputs (generated) ──────────────────────────────────
+outputs/figures/*.png
+outputs/figures/*.shp
+outputs/figures/*.dbf
+outputs/figures/*.shx
+outputs/figures/*.prj
+outputs/figures/*.cpg
+outputs/figures/*.gpkg
+outputs/figures/*.csv
+
+# ── IDE & OS ─────────────────────────────────────────────
+.vscode/
+.idea/
+*.DS_Store
+*:Zone.Identifier
+
+# ── Logs & temp ──────────────────────────────────────────
+*.log
+*.tmp
+
+# VS Code (may contain DB credentials)
+.vscode/

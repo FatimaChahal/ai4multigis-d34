@@ -1,185 +1,192 @@
-import json
-import os
-from pathlib import Path
 from web3 import Web3
-from sqlalchemy import create_engine, text
+from web3.middleware import ExtraDataToPOAMiddleware
+from eth_account import Account
+import json, os, hashlib
+from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv("/home/fatima/D3.4/config/.env")
 
-# Database connection
-engine = create_engine(
-    f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}"
-    f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
-)
-
-# Blockchain connection
+# ── Blockchain connection ─────────────────────────────────────────────────────
 w3 = Web3(Web3.HTTPProvider("http://127.0.0.1:8545"))
+w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
 
-# Load contract config
+PRIVATE_KEY = os.getenv("BESU_PRIVATE_KEY")
+if not PRIVATE_KEY:
+    raise EnvironmentError("BESU_PRIVATE_KEY not set in config/.env")
+account  = Account.from_key(PRIVATE_KEY)
+DEPLOYER = account.address
+
+# ── Contract setup ────────────────────────────────────────────────────────────
 config_path = Path("/home/fatima/D3.4/config/contract_config.json")
 with open(config_path) as f:
-    contract_config = json.load(f)
+    cfg = json.load(f)
 
-CONTRACT_ADDRESS = contract_config["contractAddress"]
-DEPLOYER_ADDRESS = contract_config["deployerAddress"]
+def _load_contract(sol_name, address):
+    abi_path = Path(
+        f"/home/fatima/D3.4/blockchain/artifacts/contracts/"
+        f"{sol_name}.sol/{sol_name}.json"
+    )
+    abi = json.load(open(abi_path))["abi"]
+    return w3.eth.contract(address=address, abi=abi)
 
-# Load contract ABI from compiled artifacts
-abi_path = Path("/home/fatima/D3.4/blockchain/artifacts/contracts/GISIndexRegistry.sol/GISIndexRegistry.json")
-with open(abi_path) as f:
-    artifact = json.load(f)
-    CONTRACT_ABI = artifact["abi"]
-
-# Instantiate contract
-contract = w3.eth.contract(
-    address=CONTRACT_ADDRESS,
-    abi=CONTRACT_ABI
-)
+registry    = _load_contract("GISIndexRegistry",  cfg["contractAddress"])
+access_ctrl = _load_contract("AccessController",  cfg["accessControllerAddress"])
+prov_logger = _load_contract("ProvenanceLogger",  cfg["provenanceLoggerAddress"])
 
 
+# ── Internal helper ───────────────────────────────────────────────────────────
+def _send_tx(fn, gas=500000):
+    """Sign and send a transaction locally, wait for receipt."""
+    tx = fn.build_transaction({
+        "from":     DEPLOYER,
+        "gas":      gas,
+        "gasPrice": 0,
+        "nonce":    w3.eth.get_transaction_count(DEPLOYER),
+        "chainId":  1337,
+    })
+    signed  = account.sign_transaction(tx)
+    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+    return w3.eth.wait_for_transaction_receipt(tx_hash)
+
+
+# ── GISIndexRegistry API ──────────────────────────────────────────────────────
 def register_index_version(
     data_hash: str,
     layer_name: str,
     actor: str,
     metadata_ref: str,
-    provenance_log_id: int
-) -> str:
-    """
-    Register an index version on the blockchain and update
-    the provenance log with the real transaction hash.
-    """
-    print(f"Registering index version on blockchain...")
-    print(f"  Layer    : {layer_name}")
-    print(f"  Actor    : {actor}")
-    print(f"  Hash     : {data_hash[:32]}...")
-
-    # Check connection
+) -> dict:
+    """Register a GIS index version on-chain. Returns tx details."""
     if not w3.is_connected():
-        raise ConnectionError("Cannot connect to blockchain node")
-
-    # Build and send transaction
-    tx_hash = contract.functions.registerIndexVersion(
-        data_hash,
-        layer_name,
-        actor,
-        metadata_ref
-    ).transact({
-        "from": DEPLOYER_ADDRESS,
-        "gas": 500000
-    })
-
-    # Wait for confirmation
-    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-    tx_hash_hex = receipt.transactionHash.hex()
-
-    print(f"  TX Hash  : {tx_hash_hex}")
-    print(f"  Block    : {receipt.blockNumber}")
-    print(f"  Gas used : {receipt.gasUsed}")
-    print(f"  Status   : {'SUCCESS' if receipt.status == 1 else 'FAILED'}")
-
-    # Update provenance log with real transaction hash
-    with engine.begin() as conn:
-        conn.execute(text("""
-            UPDATE governance.provenance_log
-            SET blockchain_tx = :tx_hash
-            WHERE id = :log_id
-        """), {
-            "tx_hash": tx_hash_hex,
-            "log_id": provenance_log_id
-        })
-
-    print(f"  Provenance log updated with real TX hash")
-    return tx_hash_hex
-
-
-def validate_index_version(version_id: int) -> str:
-    """Validate an index version on-chain."""
-    print(f"Validating index version {version_id} on blockchain...")
-
-    tx_hash = contract.functions.validateIndexVersion(
-        version_id
-    ).transact({
-        "from": DEPLOYER_ADDRESS,
-        "gas": 200000
-    })
-
-    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-    tx_hash_hex = receipt.transactionHash.hex()
-    print(f"  Validated. TX Hash: {tx_hash_hex}")
-    return tx_hash_hex
-
-
-def verify_index_hash(version_id: int, data_hash: str) -> bool:
-    """Verify a hash against the on-chain record."""
-    result = contract.functions.verifyIndexHash(
-        version_id,
-        data_hash
-    ).call()
-    return result
-
-
-def get_index_version(version_id: int) -> dict:
-    """Get on-chain details of an index version."""
-    result = contract.functions.getIndexVersion(version_id).call()
+        raise ConnectionError("Cannot connect to Besu node at http://127.0.0.1:8545")
+    receipt = _send_tx(registry.functions.registerIndexVersion(
+        data_hash, layer_name, actor, metadata_ref
+    ))
+    version_id = registry.functions.latestVersionId().call()
     return {
-        "dataHash": result[0],
-        "layerName": result[1],
-        "actor": result[2],
-        "timestamp": result[3],
-        "validated": result[4]
+        "tx_hash":      receipt.transactionHash.hex(),
+        "block_number": receipt.blockNumber,
+        "gas_used":     receipt.gasUsed,
+        "status":       "SUCCESS" if receipt.status == 1 else "FAILED",
+        "version_id":   version_id,
     }
 
 
+def validate_index_version(version_id: int) -> dict:
+    """Validate an index version on-chain (admin only)."""
+    receipt = _send_tx(
+        registry.functions.validateIndexVersion(version_id), gas=200000
+    )
+    return {
+        "tx_hash": receipt.transactionHash.hex(),
+        "status":  "SUCCESS" if receipt.status == 1 else "FAILED",
+    }
+
+
+def verify_index_hash(version_id: int, data_hash: str) -> bool:
+    """Verify a hash against the on-chain validated record. Read-only."""
+    return registry.functions.verifyIndexHash(version_id, data_hash).call()
+
+
+def get_index_version(version_id: int) -> dict:
+    """Read an index version record from the chain. Read-only."""
+    r = registry.functions.getIndexVersion(version_id).call()
+    return {
+        "dataHash":  r[0],
+        "layerName": r[1],
+        "actor":     r[2],
+        "timestamp": r[3],
+        "validated": r[4],
+    }
+
+
+# ── AccessController API ──────────────────────────────────────────────────────
+def grant_role(address: str, role: int) -> dict:
+    """
+    Grant a role to an address.
+    Roles: 1=ANALYST, 2=DATA_PROVIDER, 3=ADMINISTRATOR
+    """
+    receipt = _send_tx(
+        access_ctrl.functions.grantRole(address, role), gas=100000
+    )
+    return {
+        "tx_hash": receipt.transactionHash.hex(),
+        "status":  "SUCCESS" if receipt.status == 1 else "FAILED",
+    }
+
+
+def get_role(address: str) -> str:
+    """Get the role of an address. Read-only."""
+    role_map = {0: "NONE", 1: "ANALYST", 2: "DATA_PROVIDER", 3: "ADMINISTRATOR"}
+    role_int = access_ctrl.functions.getRole(address).call()
+    return role_map.get(role_int, "UNKNOWN")
+
+
+def is_data_provider(address: str) -> bool:
+    """Check if an address has DATA_PROVIDER or higher role. Read-only."""
+    return access_ctrl.functions.isDataProvider(address).call()
+
+
+# ── ProvenanceLogger API ──────────────────────────────────────────────────────
+def log_operation(
+    operation: str,
+    input_hash: str,
+    output_hash: str,
+    actor: str,
+    metadata_ref: str,
+) -> dict:
+    """
+    Log a pipeline operation on-chain for immutable audit trail.
+    Operations: INGEST, TRANSFORM, VALIDATE, REGISTER
+    """
+    receipt = _send_tx(prov_logger.functions.logOperation(
+        operation, input_hash, output_hash, actor, metadata_ref
+    ))
+    entry_id = prov_logger.functions.entryCount().call()
+    return {
+        "tx_hash":  receipt.transactionHash.hex(),
+        "block_number": receipt.blockNumber,
+        "gas_used": receipt.gasUsed,
+        "status":   "SUCCESS" if receipt.status == 1 else "FAILED",
+        "entry_id": entry_id,
+    }
+
+
+def get_provenance_entry(entry_id: int) -> dict:
+    """Read a provenance entry from the chain. Read-only."""
+    r = prov_logger.functions.getEntry(entry_id).call()
+    return {
+        "operation":  r[0],
+        "inputHash":  r[1],
+        "outputHash": r[2],
+        "actor":      r[3],
+        "timestamp":  r[4],
+    }
+
+
+def verify_provenance_hash(entry_id: int, output_hash: str) -> bool:
+    """Verify an output hash against a provenance entry. Read-only."""
+    return prov_logger.functions.verifyOutputHash(entry_id, output_hash).call()
+
+
+# ── Utility ───────────────────────────────────────────────────────────────────
+def compute_gis_hash(data: dict) -> str:
+    """Compute a deterministic SHA-256 hash of a GIS dataset descriptor."""
+    return hashlib.sha256(
+        json.dumps(data, sort_keys=True, default=str).encode("utf-8")
+    ).hexdigest()
+
+
+# ── Connectivity check ────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print("=== LedgerInterface Test ===")
-    print(f"Blockchain connected : {w3.is_connected()}")
-    print(f"Contract address     : {CONTRACT_ADDRESS}")
-    print(f"Latest block         : {w3.eth.block_number}")
-
-    # Fetch the pending provenance record from the database
-    with engine.connect() as conn:
-        result = conn.execute(text("""
-            SELECT id, data_hash, layer_name, actor, metadata
-            FROM governance.provenance_log
-            WHERE blockchain_tx = 'PENDING_BLOCKCHAIN_REGISTRATION'
-            ORDER BY id
-            LIMIT 1
-        """))
-        record = result.fetchone()
-
-    if not record:
-        print("No pending provenance records found.")
-    else:
-        log_id = record[0]
-        data_hash = record[1]
-        layer_name = record[2]
-        actor = record[3]
-        metadata = record[4]
-
-        print(f"\nFound pending record: ID={log_id}, Layer={layer_name}")
-
-        # Step 1: Register on blockchain
-        tx_hash = register_index_version(
-            data_hash=data_hash,
-            layer_name=layer_name,
-            actor=actor,
-            metadata_ref=f"PostGIS:governance.provenance_log:id={log_id}",
-            provenance_log_id=log_id
-        )
-
-        # Step 2: Validate on blockchain
-        validate_index_version(version_id=1)
-
-        # Step 3: Verify the hash
-        is_valid = verify_index_hash(version_id=1, data_hash=data_hash)
-        print(f"\nHash verification result: {is_valid}")
-
-        # Step 4: Get on-chain record
-        on_chain = get_index_version(version_id=1)
-        print(f"\nOn-chain record:")
-        print(f"  Layer     : {on_chain['layerName']}")
-        print(f"  Actor     : {on_chain['actor']}")
-        print(f"  Validated : {on_chain['validated']}")
-        print(f"  Timestamp : {on_chain['timestamp']}")
-
-    print("\n=== LedgerInterface Test Complete ===")
+    print("=== LedgerInterface — Besu QBFT ===")
+    print(f"Connected           : {w3.is_connected()}")
+    print(f"Latest block        : {w3.eth.block_number}")
+    print(f"GISIndexRegistry    : {cfg['contractAddress']}")
+    print(f"AccessController    : {cfg['accessControllerAddress']}")
+    print(f"ProvenanceLogger    : {cfg['provenanceLoggerAddress']}")
+    print(f"Deployer role       : {get_role(DEPLOYER)}")
+    print(f"Latest GIS version  : {registry.functions.latestVersionId().call()}")
+    print(f"Provenance entries  : {prov_logger.functions.entryCount().call()}")
+    print("=== OK ===")

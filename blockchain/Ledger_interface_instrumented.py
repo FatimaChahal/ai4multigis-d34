@@ -111,6 +111,14 @@ engine = create_engine(
 )
 
 w3 = Web3(Web3.HTTPProvider("http://127.0.0.1:8545"))
+from web3.middleware import ExtraDataToPOAMiddleware
+w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
+from eth_account import Account as _Account
+_pk = os.getenv("BESU_PRIVATE_KEY")
+if not _pk:
+    raise EnvironmentError("BESU_PRIVATE_KEY not set in config/.env")
+_signer = _Account.from_key(_pk)
+DEPLOYER_ADDRESS = _signer.address
 
 config_path = Path("/home/fatima/D3.4/config/contract_config.json")
 with open(config_path) as f:
@@ -200,15 +208,14 @@ def register_index_version(
 
     # ── Measure TX submission ─────────────────────────────────────────────────
     with Timer() as t_submit:
-        tx_hash = contract.functions.registerIndexVersion(
-            data_hash,
-            layer_name,
-            actor,
-            metadata_ref
-        ).transact({
-            "from": DEPLOYER_ADDRESS,
-            "gas": 500000
-        })
+        _fn = contract.functions.registerIndexVersion(
+            data_hash, layer_name, actor, metadata_ref)
+        _tx = _fn.build_transaction({
+            "from": DEPLOYER_ADDRESS, "gas": 500000,
+            "gasPrice": 0, "chainId": 1337,
+            "nonce": w3.eth.get_transaction_count(DEPLOYER_ADDRESS)})
+        _signed = _signer.sign_transaction(_tx)
+        tx_hash = w3.eth.send_raw_transaction(_signed.raw_transaction)
 
     report.add(
         operation="TX submission to GISIndexRegistry",
@@ -265,12 +272,13 @@ def validate_index_version(version_id: int, report: TimingReport) -> str:
     log.info(f"Validating index version {version_id} on blockchain...")
 
     with Timer() as t:
-        tx_hash = contract.functions.validateIndexVersion(
-            version_id
-        ).transact({
-            "from": DEPLOYER_ADDRESS,
-            "gas": 200000
-        })
+        _fn2 = contract.functions.validateIndexVersion(version_id)
+        _tx2 = _fn2.build_transaction({
+            "from": DEPLOYER_ADDRESS, "gas": 200000,
+            "gasPrice": 0, "chainId": 1337,
+            "nonce": w3.eth.get_transaction_count(DEPLOYER_ADDRESS)})
+        _signed2 = _signer.sign_transaction(_tx2)
+        tx_hash = w3.eth.send_raw_transaction(_signed2.raw_transaction)
         receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
 
     tx_hash_hex = receipt.transactionHash.hex()
@@ -321,7 +329,7 @@ if __name__ == "__main__":
 
     # Initialise the timing report for this run
     report = TimingReport()
-    report.metadata["environment"] = "Hardhat local simulation"
+    report.metadata["environment"] = "Hyperledger Besu QBFT — permissioned private network (chainId=1337)"
     report.metadata["contract_address"] = CONTRACT_ADDRESS
     report.metadata["node_url"] = "http://127.0.0.1:8545"
 

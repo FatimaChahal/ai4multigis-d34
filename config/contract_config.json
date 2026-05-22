@@ -1,0 +1,11 @@
+{
+  "contractAddress": "0x9c7DAdc5ED76E994EC228c6E7D0Af96ab0A53875",
+  "transactionHash": "0xed156fe30b9ae60da39cd816c38cd837d7b35f2d6932492126fb3c6e1d64f000",
+  "blockNumber": null,
+  "network": "besu",
+  "chainId": 1337,
+  "deployedAt": "2026-05-20T08:47:51.881Z",
+  "accessControllerAddress": "0xB5C79773116Aaa658fa9840006Cc2d86EA8D8669",
+  "provenanceLoggerAddress": "0x54488D15e52682E5c1B945FCC7ee172B895d1A38",
+  "updatedAt": "2026-05-20T09:17:22.185Z"
+}

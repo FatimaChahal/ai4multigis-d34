@@ -1,0 +1,46 @@
+{
+  "run_id": "20260521_102037",
+  "total_s": 3.5801,
+  "records": [
+    {
+      "operation": "SHA-256 hash computation",
+      "duration_s": 0.0106,
+      "timestamp": "2026-05-21T10:20:37.476340",
+      "notes": "2138 grid cells serialised and hashed"
+    },
+    {
+      "operation": "TX submission to GISIndexRegistry",
+      "duration_s": 0.028,
+      "timestamp": "2026-05-21T10:20:37.513549",
+      "notes": "transact() call including signing"
+    },
+    {
+      "operation": "TX confirmation (block inclusion)",
+      "duration_s": 1.643,
+      "timestamp": "2026-05-21T10:20:39.156929",
+      "notes": "Block #6519 \u00b7 Gas used: 287697"
+    },
+    {
+      "operation": "Provenance log write-back (PostGIS)",
+      "duration_s": 0.0035,
+      "timestamp": "2026-05-21T10:20:39.160749",
+      "notes": "Updated provenance_log id=3 with TX hash"
+    },
+    {
+      "operation": "validateIndexVersion TX",
+      "duration_s": 1.895,
+      "timestamp": "2026-05-21T10:20:41.056030",
+      "notes": "Gas used: 26632"
+    }
+  ],
+  "metadata": {
+    "environment": "Hyperledger Besu QBFT \u2014 permissioned private network (chainId=1337)",
+    "contract_address": "0x9c7DAdc5ED76E994EC228c6E7D0Af96ab0A53875",
+    "node_url": "http://127.0.0.1:8545",
+    "gas_used_registration": 287697,
+    "block_number": 6519,
+    "gas_used_validation": 26632,
+    "hash_verified": false,
+    "on_chain_validated": true
+  }
+}
